@@ -275,9 +275,9 @@ class ApiContractEnvironment(Environment):
             action_applied="Episode started — initial schema loaded.",
             action_valid=True,
             consumer_results=consumer_results,
-            backward_compat_score=round(bw, 4),
-            forward_compat_score=round(fw, 4),
-            no_redundancy_score=round(nr, 4),
+            backward_compat_score=self._clamp_open_score(bw),
+            forward_compat_score=self._clamp_open_score(fw),
+            no_redundancy_score=self._clamp_open_score(nr),
             deprecation_header_present=self._deprecation_header_active,
             task_id=self._task_id,
             task_difficulty=self._task["difficulty"],
@@ -313,9 +313,9 @@ class ApiContractEnvironment(Environment):
                 action_applied=msg,
                 action_valid=False,
                 consumer_results=consumer_results,
-                backward_compat_score=round(bw, 4),
-                forward_compat_score=round(fw, 4),
-                no_redundancy_score=round(nr, 4),
+                backward_compat_score=self._clamp_open_score(bw),
+                forward_compat_score=self._clamp_open_score(fw),
+                no_redundancy_score=self._clamp_open_score(nr),
                 deprecation_header_present=self._deprecation_header_active,
                 task_id=self._task_id,
                 task_difficulty=self._task["difficulty"],
@@ -354,9 +354,9 @@ class ApiContractEnvironment(Environment):
             action_applied=msg,
             action_valid=True,
             consumer_results=consumer_results,
-            backward_compat_score=round(bw, 4),
-            forward_compat_score=round(fw, 4),
-            no_redundancy_score=round(nr, 4),
+            backward_compat_score=self._clamp_open_score(bw),
+            forward_compat_score=self._clamp_open_score(fw),
+            no_redundancy_score=self._clamp_open_score(nr),
             deprecation_header_present=self._deprecation_header_active,
             task_id=self._task_id,
             task_difficulty=self._task["difficulty"],
@@ -514,7 +514,7 @@ class ApiContractEnvironment(Environment):
                 "tests_passed": tests_passed,
                 "tests_total":  tests_total,
                 "hard_breaks":  hard_breaks,
-                "score":        round(score, 4),
+                "score":        self._clamp_open_score(score),
             })
 
         return results
@@ -576,6 +576,10 @@ class ApiContractEnvironment(Environment):
     def _clamp_open_reward(self, reward: float) -> float:
         """Ensure rewards stay in the strict open interval required by validator."""
         return round(min(self.REWARD_MAX, max(self.REWARD_MIN, reward)), 4)
+
+    def _clamp_open_score(self, score: float) -> float:
+        """Ensure score-like metrics stay in the strict open interval required by validator."""
+        return round(min(self.REWARD_MAX, max(self.REWARD_MIN, score)), 4)
 
     def _build_hint(
         self, bw: float, fw: float, nr: float, hard_breaks: int
