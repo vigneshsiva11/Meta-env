@@ -68,6 +68,14 @@ def _clamp_open_reward(score: float) -> float:
     return min(REWARD_MAX, max(REWARD_MIN, float(score)))
 
 
+def _display_open_score(score: float) -> float:
+    """Clamp score for stdout fields so logs never show exact 0.0 or 1.0."""
+    try:
+        return _clamp_open_reward(float(score))
+    except Exception:
+        return REWARD_MIN
+
+
 # ── Server startup ────────────────────────────────────────────────────────────
 
 def _is_port_open(port: int, timeout: float = 1.0) -> bool:
@@ -112,6 +120,9 @@ def log_start(task_id: str, difficulty: str, max_steps: int) -> None:
 
 def log_step(step: int, action_type: str, target_field: str,
              reward: float, done: bool, backward: float, forward: float) -> None:
+    reward = _display_open_score(reward)
+    backward = _display_open_score(backward)
+    forward = _display_open_score(forward)
     print(
         f"[STEP] step={step} action={action_type} target={target_field} "
         f"reward={reward:.4f} done={str(done).lower()} "
@@ -121,6 +132,7 @@ def log_step(step: int, action_type: str, target_field: str,
 
 
 def log_end(task_id: str, final_reward: float, total_steps: int) -> None:
+    final_reward = _display_open_score(final_reward)
     print(f"[END] task_id={task_id} final_reward={final_reward:.4f} steps={total_steps}", flush=True)
 
 
@@ -373,9 +385,9 @@ def main() -> None:
     print("FINAL SCORES", flush=True)
     print("=" * 50, flush=True)
     for tid, score in scores.items():
-        print(f"  {tid}: {score:.4f}", flush=True)
-    avg = sum(scores.values()) / len(scores) if scores else 0.0
-    print(f"  Average : {avg:.4f}", flush=True)
+        print(f"  {tid}: {_display_open_score(score):.4f}", flush=True)
+    avg = sum(scores.values()) / len(scores) if scores else REWARD_MIN
+    print(f"  Average : {_display_open_score(avg):.4f}", flush=True)
     print(f"  Elapsed : {elapsed:.1f}s", flush=True)
 
     if elapsed >= 1200:
