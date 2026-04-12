@@ -221,6 +221,8 @@ class ApiContractEnvironment(Environment):
 
     # Unique feature #7: catastrophic-failure threshold
     HARD_BREAK_TERMINATION_THRESHOLD: int = 5
+    REWARD_MIN: float = 0.0001
+    REWARD_MAX: float = 0.9999
 
     def __init__(self) -> None:
         super().__init__()
@@ -268,7 +270,7 @@ class ApiContractEnvironment(Environment):
 
         return ContractObservation(
             done=False,
-            reward=round(bw * 0.30, 4),
+            reward=self._clamp_open_reward(bw * 0.30),
             current_schema=copy.deepcopy(self._schema),
             action_applied="Episode started — initial schema loaded.",
             action_valid=True,
@@ -303,9 +305,10 @@ class ApiContractEnvironment(Environment):
             consumer_results = self._run_consumer_tests()
             bw, fw, nr = self._compute_scores(consumer_results)
             done = steps_remaining == 0
+            reward = self._clamp_open_reward(max(0.0, bw * 0.30 - 0.05))
             return ContractObservation(
                 done=done,
-                reward=round(max(0.0, bw * 0.30 - 0.05), 4),
+                reward=reward,
                 current_schema=copy.deepcopy(self._schema),
                 action_applied=msg,
                 action_valid=False,
@@ -340,7 +343,7 @@ class ApiContractEnvironment(Environment):
             self._submitted = is_submit
             reward = self._final_reward(bw, fw, nr)
         else:
-            reward = round(bw * 0.30, 4)
+            reward = self._clamp_open_reward(bw * 0.30)
 
         hint = "" if done else self._build_hint(bw, fw, nr, hard_breaks_this_step)
 
@@ -564,11 +567,15 @@ class ApiContractEnvironment(Environment):
         """
         base = bw * 0.50 + fw * 0.30 + nr * 0.20
         penalty = self._hard_breaks_total * 0.10
-        reward = max(0.0001, base - penalty)
+        reward = max(self.REWARD_MIN, base - penalty)
         if self._task.get("bonus_deprecation_header") and self._deprecation_header_active:
-            reward = min(0.9999, reward + 0.05)
-        reward = min(0.9999, reward)
+            reward = min(self.REWARD_MAX, reward + 0.05)
+        reward = min(self.REWARD_MAX, reward)
         return round(reward, 4)
+
+    def _clamp_open_reward(self, reward: float) -> float:
+        """Ensure rewards stay in the strict open interval required by validator."""
+        return round(min(self.REWARD_MAX, max(self.REWARD_MIN, reward)), 4)
 
     def _build_hint(
         self, bw: float, fw: float, nr: float, hard_breaks: int

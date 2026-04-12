@@ -60,6 +60,12 @@ llm = OpenAI(
 )
 
 TASKS_TO_RUN: List[str] = ["TASK-01", "TASK-02", "TASK-03"]
+REWARD_MIN: float = 0.0001
+REWARD_MAX: float = 0.9999
+
+
+def _clamp_open_reward(score: float) -> float:
+    return min(REWARD_MAX, max(REWARD_MIN, float(score)))
 
 
 # ── Server startup ────────────────────────────────────────────────────────────
@@ -236,8 +242,9 @@ def run_episode(task_id: str, env: Any) -> float:
     except Exception as exc:
         print(f"  [WARN] reset() failed for {task_id}: {exc}", flush=True)
         log_start(task_id, "unknown", 0)
-        log_end(task_id, 0.0, 0)
-        return 0.0
+        fallback = _clamp_open_reward(0.0)
+        log_end(task_id, fallback, 0)
+        return fallback
 
     obs = result.observation
     task_description = obs.hint
@@ -304,12 +311,13 @@ def run_episode(task_id: str, env: Any) -> float:
             result = env.step(action)
         except Exception as exc:
             print(f"  [WARN] step() failed: {exc}", flush=True)
-            log_step(step, action.action_type, action.target_field, final_reward, True, 0.0, 0.0)
+            final_reward = _clamp_open_reward(final_reward)
+            log_step(step, action.action_type, action.target_field, final_reward, True, REWARD_MIN, REWARD_MIN)
             log_end(task_id, final_reward, step)
             return final_reward
 
         obs = result.observation
-        final_reward = float(result.reward or 0.0)
+        final_reward = _clamp_open_reward(float(result.reward or 0.0))
 
         log_step(
             step=step,
@@ -324,7 +332,7 @@ def run_episode(task_id: str, env: Any) -> float:
         time.sleep(0.5)
 
     log_end(task_id, final_reward, step)
-    return final_reward
+    return _clamp_open_reward(final_reward)
 
 
 # ── Main ─────────────────────────────────────────────────────────────────────
@@ -351,12 +359,13 @@ def main() -> None:
                     scores[task_id] = run_episode(task_id, env_client)
                 except Exception as exc:
                     print(f"  [WARN] Episode {task_id} failed: {exc}", flush=True)
-                    log_end(task_id, 0.0, 0)
-                    scores[task_id] = 0.0
+                    fallback = _clamp_open_reward(0.0)
+                    log_end(task_id, fallback, 0)
+                    scores[task_id] = fallback
     except Exception as exc:
         print(f"  [ERROR] Could not connect to environment: {exc}", flush=True)
         for task_id in TASKS_TO_RUN:
-            scores[task_id] = 0.0
+            scores[task_id] = _clamp_open_reward(0.0)
 
     elapsed = time.time() - t_start
 
