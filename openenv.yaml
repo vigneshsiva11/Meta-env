@@ -14,7 +14,7 @@ tasks:
       Add a new optional 'currency' field to a payments API without
       breaking 2 existing consumer test suites.
     max_steps: 6
-    reward_range: [0.0, 1.0]
+    reward_range: [0.0001, 0.9999]
 
   - id: TASK-02
     difficulty: medium
@@ -22,7 +22,7 @@ tasks:
       Rename 'user_name' to 'username'. Keep 'user_name' as a backward-compat
       alias for 3 legacy consumers. Emit X-Deprecated-Field header for +0.05 bonus.
     max_steps: 10
-    reward_range: [0.0, 1.0]
+    reward_range: [0.0001, 0.9999]
 
   - id: TASK-03
     difficulty: hard
@@ -30,7 +30,7 @@ tasks:
       Merge two conflicting API versions (v1 Team-A + v2 Team-B) into one unified
       schema satisfying all 4 consumers simultaneously.
     max_steps: 15
-    reward_range: [0.0, 1.0]
+    reward_range: [0.0001, 0.9999]
 
 action_space:
   type: ContractAction

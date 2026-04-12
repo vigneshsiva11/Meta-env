@@ -564,9 +564,10 @@ class ApiContractEnvironment(Environment):
         """
         base = bw * 0.50 + fw * 0.30 + nr * 0.20
         penalty = self._hard_breaks_total * 0.10
-        reward = max(0.0, base - penalty)
+        reward = max(0.0001, base - penalty)
         if self._task.get("bonus_deprecation_header") and self._deprecation_header_active:
-            reward = min(1.0, reward + 0.05)
+            reward = min(0.9999, reward + 0.05)
+        reward = min(0.9999, reward)
         return round(reward, 4)
 
     def _build_hint(
