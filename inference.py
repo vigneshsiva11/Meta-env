@@ -43,9 +43,9 @@ from client import ApiContractEnv
 from models import ContractAction
 
 # ── required env vars ─────────────────────────────────────────────────────────
-API_BASE_URL: str = os.environ["API_BASE_URL"]
-MODEL_NAME:   str = os.environ["MODEL_NAME"]
-HF_TOKEN:     str = os.environ["HF_TOKEN"]      # Gemini API key goes here
+API_BASE_URL: str = os.environ.get("API_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/")
+MODEL_NAME:   str = os.environ.get("MODEL_NAME", "gemini-2.0-flash")
+HF_TOKEN:     str = os.environ["HF_TOKEN"]      # Gemini API key — no default, must be set
 ENV_BASE_URL: str = os.environ.get("ENV_BASE_URL", "http://localhost:8000")
 
 # ── Gemini via OpenAI-compat client ──────────────────────────────────────────
