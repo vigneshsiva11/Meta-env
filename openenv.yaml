@@ -1,0 +1,99 @@
+name: api_contract_env
+version: "1.0.0"
+description: >
+  An AI agent learns to evolve REST API contracts — adding fields, renaming
+  with backward-compat aliases, merging conflicting versions — without breaking
+  existing consumer test suites. Three real-world tasks of increasing difficulty.
+author: vigneshsiva11
+documentation_url: ""
+
+tasks:
+  - id: TASK-01
+    difficulty: easy
+    description: >
+      Add a new optional 'currency' field to a payments API without
+      breaking 2 existing consumer test suites.
+    max_steps: 6
+    reward_range: [0.0, 1.0]
+
+  - id: TASK-02
+    difficulty: medium
+    description: >
+      Rename 'user_name' to 'username'. Keep 'user_name' as a backward-compat
+      alias for 3 legacy consumers. Emit X-Deprecated-Field header for +0.05 bonus.
+    max_steps: 10
+    reward_range: [0.0, 1.0]
+
+  - id: TASK-03
+    difficulty: hard
+    description: >
+      Merge two conflicting API versions (v1 Team-A + v2 Team-B) into one unified
+      schema satisfying all 4 consumers simultaneously.
+    max_steps: 15
+    reward_range: [0.0, 1.0]
+
+action_space:
+  type: ContractAction
+  fields:
+    action_type:
+      type: "Literal[add_field,rename_field,remove_field,add_alias,change_type,mark_deprecated,submit]"
+      required: true
+    target_field:
+      type: str
+      required: true
+    new_name:
+      type: "Optional[str]"
+      required: false
+    new_type:
+      type: "Optional[str]"
+      required: false
+    add_deprecation_header:
+      type: bool
+      required: false
+      default: false
+    reasoning:
+      type: str
+      required: false
+
+observation_space:
+  type: ContractObservation
+  fields:
+    done:
+      type: bool
+    reward:
+      type: float
+      range: [0.0, 1.0]
+    current_schema:
+      type: "List[Dict]"
+    backward_compat_score:
+      type: float
+      range: [0.0, 1.0]
+    forward_compat_score:
+      type: float
+      range: [0.0, 1.0]
+    no_redundancy_score:
+      type: float
+      range: [0.0, 1.0]
+    consumer_results:
+      type: "List[Dict]"
+    deprecation_header_present:
+      type: bool
+    task_id:
+      type: str
+    task_difficulty:
+      type: "Literal[easy,medium,hard]"
+    steps_remaining:
+      type: int
+    hint:
+      type: str
+
+reward_function: >
+  Intermediate (every non-final step):
+    reward = backward_compat * 0.30
+
+  Final (on 'submit' or step-limit):
+    reward = backward_compat * 0.50
+           + forward_compat  * 0.30
+           + no_redundancy   * 0.20
+           - 0.10 * hard_breaks_total   (floor 0.0)
+           + 0.05 bonus if deprecation header present (Task-02 only)
