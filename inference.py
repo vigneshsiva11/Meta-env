@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import time
 import threading
@@ -54,6 +55,8 @@ except Exception:
 llm = OpenAI(
     api_key=HF_TOKEN,
     base_url=API_BASE_URL,
+    timeout=30.0,
+    max_retries=2,
 )
 
 TASKS_TO_RUN: List[str] = ["TASK-01", "TASK-02", "TASK-03"]
@@ -141,31 +144,61 @@ Critical rules:
 """
 
 
+def _extract_json_object(raw_text: str) -> Optional[Dict[str, Any]]:
+    """Best-effort recovery for model outputs that include fences or extra text."""
+    candidate = raw_text.strip()
+    if not candidate:
+        return None
+
+    if candidate.startswith("```"):
+        parts = candidate.split("```")
+        candidate = parts[1] if len(parts) > 1 else candidate
+        candidate = candidate.removeprefix("json").strip()
+
+    try:
+        parsed = json.loads(candidate)
+        return parsed if isinstance(parsed, dict) else None
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", candidate, flags=re.DOTALL)
+        if not match:
+            return None
+        try:
+            parsed = json.loads(match.group(0))
+            return parsed if isinstance(parsed, dict) else None
+        except json.JSONDecodeError:
+            return None
+
+
 def call_llm(obs_text: str, task_description: str) -> Optional[Dict[str, Any]]:
     raw = ""
-    try:
-        response = llm.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user",   "content": f"Task:\n{task_description}\n\nCurrent environment state:\n{obs_text}"},
-            ],
-            max_tokens=400,
-            temperature=0.0,
-        )
-        raw = response.choices[0].message.content.strip()
-        if raw.startswith("```"):
-            parts = raw.split("```")
-            raw = parts[1] if len(parts) > 1 else raw
-            if raw.startswith("json"):
-                raw = raw[4:]
-        return json.loads(raw.strip())
-    except json.JSONDecodeError as exc:
-        print(f"  [WARN] JSON parse error: {exc} | raw={raw[:120]}", flush=True)
-        return None
-    except Exception as exc:
-        print(f"  [WARN] LLM call failed: {exc}", flush=True)
-        return None
+    for attempt in range(3):
+        try:
+            response = llm.chat.completions.create(
+                model=MODEL_NAME,
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user",   "content": f"Task:\n{task_description}\n\nCurrent environment state:\n{obs_text}"},
+                ],
+                max_tokens=128,
+                temperature=0.0,
+            )
+            raw = (response.choices[0].message.content or "").strip()
+            parsed = _extract_json_object(raw)
+            if parsed is not None:
+                return parsed
+            if attempt < 2:
+                print(f"  [WARN] JSON parse error: unable to recover JSON | raw={raw[:120]}", flush=True)
+                time.sleep(0.2 * (attempt + 1))
+                continue
+            print(f"  [WARN] JSON parse error: unable to recover JSON | raw={raw[:120]}", flush=True)
+            return None
+        except Exception as exc:
+            if attempt < 2:
+                print(f"  [WARN] LLM call failed (attempt {attempt + 1}/3): {exc}", flush=True)
+                time.sleep(0.2 * (attempt + 1))
+                continue
+            print(f"  [WARN] LLM call failed: {exc}", flush=True)
+            return None
 
 
 def obs_to_text(obs: Any, step: int) -> str:
@@ -231,12 +264,34 @@ def run_episode(task_id: str, env: Any) -> float:
 
         try:
             from models import ContractAction
+
+            valid_action_types = {
+                "add_field",
+                "rename_field",
+                "remove_field",
+                "add_alias",
+                "change_type",
+                "mark_deprecated",
+                "submit",
+            }
+            action_type = str(action_data.get("action_type") or "submit")
+            if action_type not in valid_action_types:
+                action_type = "submit"
+
             target_field = str(action_data.get("target_field") or "_")
+            new_name = action_data.get("new_name") or None
+            new_type = action_data.get("new_type") or None
+
+            if action_type in {"rename_field", "add_alias"} and not new_name:
+                action_type = "submit"
+            if action_type == "change_type" and not new_type:
+                action_type = "submit"
+
             action = ContractAction(
-                action_type=action_data.get("action_type", "submit"),
+                action_type=action_type,
                 target_field=target_field,
-                new_name=action_data.get("new_name") or None,
-                new_type=action_data.get("new_type") or None,
+                new_name=new_name,
+                new_type=new_type,
                 add_deprecation_header=bool(action_data.get("add_deprecation_header", False)),
                 reasoning=str(action_data.get("reasoning", ""))[:200],
             )
