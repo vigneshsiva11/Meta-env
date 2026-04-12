@@ -27,6 +27,7 @@ import sys
 import time
 import threading
 import socket
+from urllib.parse import urlparse
 from typing import Any, Dict, List, Optional
 
 from openai import OpenAI
@@ -38,8 +39,16 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 API_BASE_URL: str = os.environ.get("API_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/")
 MODEL_NAME:   str = os.environ.get("MODEL_NAME", "gemini-2.0-flash")
 HF_TOKEN:     str = os.environ["HF_TOKEN"]
-ENV_PORT:     int = int(os.environ.get("ENV_PORT", "7860"))
+ENV_PORT:     int = int(os.environ.get("ENV_PORT", "8000"))
 ENV_BASE_URL: str = os.environ.get("ENV_BASE_URL", f"http://localhost:{ENV_PORT}")
+
+# Keep server and client on the same port when ENV_BASE_URL is explicitly provided.
+try:
+    parsed = urlparse(ENV_BASE_URL)
+    if parsed.port is not None:
+        ENV_PORT = parsed.port
+except Exception:
+    pass
 
 # ── Gemini via OpenAI-compat client ──────────────────────────────────────────
 llm = OpenAI(
