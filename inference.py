@@ -231,9 +231,10 @@ def run_episode(task_id: str, env: Any) -> float:
 
         try:
             from models import ContractAction
+            target_field = str(action_data.get("target_field") or "_")
             action = ContractAction(
                 action_type=action_data.get("action_type", "submit"),
-                target_field=action_data.get("target_field", "_"),
+                target_field=target_field,
                 new_name=action_data.get("new_name") or None,
                 new_type=action_data.get("new_type") or None,
                 add_deprecation_header=bool(action_data.get("add_deprecation_header", False)),
