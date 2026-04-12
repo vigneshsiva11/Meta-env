@@ -109,15 +109,15 @@ class ContractObservation(Observation):
 
     # Partial scores (always present — enables intermediate learning signal)
     backward_compat_score: float = Field(
-        default=0.0, ge=0.0, le=1.0,
+        default=0.0001, gt=0.0, lt=1.0,
         description="Fraction of old-consumer tests still passing",
     )
     forward_compat_score: float = Field(
-        default=0.0, ge=0.0, le=1.0,
+        default=0.0001, gt=0.0, lt=1.0,
         description="Fraction of new requirements satisfied",
     )
     no_redundancy_score: float = Field(
-        default=1.0, ge=0.0, le=1.0,
+        default=0.9999, gt=0.0, lt=1.0,
         description="1.0 = efficient; reduced by excessive mutations",
     )
     deprecation_header_present: bool = Field(

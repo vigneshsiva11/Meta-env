@@ -62,18 +62,18 @@ observation_space:
       type: bool
     reward:
       type: float
-      range: [0.0, 1.0]
+      range: [0.0001, 0.9999]
     current_schema:
       type: "List[Dict]"
     backward_compat_score:
       type: float
-      range: [0.0, 1.0]
+      range: [0.0001, 0.9999]
     forward_compat_score:
       type: float
-      range: [0.0, 1.0]
+      range: [0.0001, 0.9999]
     no_redundancy_score:
       type: float
-      range: [0.0, 1.0]
+      range: [0.0001, 0.9999]
     consumer_results:
       type: "List[Dict]"
     deprecation_header_present:

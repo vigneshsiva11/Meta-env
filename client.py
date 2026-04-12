@@ -35,6 +35,10 @@ from models import ContractAction, ContractObservation, ContractState
 class ApiContractEnv(EnvClient[ContractAction, ContractObservation, ContractState]):
     """Typed synchronous/async client for ApiContractEnvironment."""
 
+    @staticmethod
+    def _clamp_open_score(value: float) -> float:
+        return min(0.9999, max(0.0001, float(value)))
+
     def _step_payload(self, action: ContractAction) -> Dict[str, Any]:
         """Serialise action → dict for WebSocket transport."""
         return action.model_dump(exclude_none=False)
@@ -45,7 +49,7 @@ class ApiContractEnv(EnvClient[ContractAction, ContractObservation, ContractStat
         obs = ContractObservation(**obs_data)
         return StepResult(
             observation=obs,
-            reward=float(payload.get("reward", obs.reward or 0.0)),
+            reward=self._clamp_open_score(payload.get("reward", obs.reward or 0.0001)),
             done=bool(payload.get("done", obs.done)),
         )
 
