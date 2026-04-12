@@ -42,6 +42,7 @@ MODEL_NAME:   str = os.environ.get("MODEL_NAME", "gemini-2.0-flash")
 HF_TOKEN:     str = os.environ["HF_TOKEN"]
 ENV_PORT:     int = int(os.environ.get("ENV_PORT", "8000"))
 ENV_BASE_URL: str = os.environ.get("ENV_BASE_URL", f"http://localhost:{ENV_PORT}")
+FALLBACK_MODELS: str = os.environ.get("FALLBACK_MODELS", "gemini-flash-lite-latest,gemini-2.0-flash")
 
 # Keep server and client on the same port when ENV_BASE_URL is explicitly provided.
 try:
@@ -62,6 +63,14 @@ llm = OpenAI(
 TASKS_TO_RUN: List[str] = ["TASK-01", "TASK-02", "TASK-03"]
 REWARD_MIN: float = 0.0001
 REWARD_MAX: float = 0.9999
+
+
+def _model_candidates() -> List[str]:
+    models: List[str] = []
+    for name in [MODEL_NAME, *[m.strip() for m in FALLBACK_MODELS.split(",") if m.strip()]]:
+        if name not in models:
+            models.append(name)
+    return models
 
 
 def _clamp_open_reward(score: float) -> float:
@@ -187,36 +196,56 @@ def _extract_json_object(raw_text: str) -> Optional[Dict[str, Any]]:
             return None
 
 
+def _is_quota_or_rate_error(exc: Exception) -> bool:
+    msg = str(exc).lower()
+    tokens = ["429", "quota", "resource_exhausted", "rate limit", "rate_limit", "too many requests"]
+    return any(token in msg for token in tokens)
+
+
 def call_llm(obs_text: str, task_description: str) -> Optional[Dict[str, Any]]:
     raw = ""
-    for attempt in range(3):
-        try:
-            response = llm.chat.completions.create(
-                model=MODEL_NAME,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user",   "content": f"Task:\n{task_description}\n\nCurrent environment state:\n{obs_text}"},
-                ],
-                max_tokens=128,
-                temperature=0.0,
-            )
-            raw = (response.choices[0].message.content or "").strip()
-            parsed = _extract_json_object(raw)
-            if parsed is not None:
-                return parsed
-            if attempt < 2:
-                print(f"  [WARN] JSON parse error: unable to recover JSON | raw={raw[:120]}", flush=True)
-                time.sleep(0.2 * (attempt + 1))
-                continue
-            print(f"  [WARN] JSON parse error: unable to recover JSON | raw={raw[:120]}", flush=True)
-            return None
-        except Exception as exc:
-            if attempt < 2:
-                print(f"  [WARN] LLM call failed (attempt {attempt + 1}/3): {exc}", flush=True)
-                time.sleep(0.2 * (attempt + 1))
-                continue
-            print(f"  [WARN] LLM call failed: {exc}", flush=True)
-            return None
+    models = _model_candidates()
+
+    for model_idx, model_name in enumerate(models):
+        for attempt in range(2):
+            try:
+                response = llm.chat.completions.create(
+                    model=model_name,
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user",   "content": f"Task:\n{task_description}\n\nCurrent environment state:\n{obs_text}"},
+                    ],
+                    max_tokens=128,
+                    temperature=0.0,
+                )
+                raw = (response.choices[0].message.content or "").strip()
+                parsed = _extract_json_object(raw)
+                if parsed is not None:
+                    return parsed
+                if attempt < 1:
+                    print(f"  [WARN] JSON parse error on {model_name}; retrying | raw={raw[:120]}", flush=True)
+                    time.sleep(0.2)
+                    continue
+                print(f"  [WARN] JSON parse error on {model_name}; switching model | raw={raw[:120]}", flush=True)
+                break
+            except Exception as exc:
+                is_quota = _is_quota_or_rate_error(exc)
+                has_next_model = model_idx < (len(models) - 1)
+
+                if is_quota and has_next_model:
+                    print(f"  [WARN] Quota/rate limit on {model_name}; switching model ({model_idx + 1}/{len(models)}).", flush=True)
+                    break
+
+                if attempt < 1 and not is_quota:
+                    print(f"  [WARN] LLM call failed on {model_name} (retry): {exc}", flush=True)
+                    time.sleep(0.2)
+                    continue
+
+                print(f"  [WARN] LLM call failed on {model_name}: {exc}", flush=True)
+                break
+
+    print("  [WARN] All configured models failed; falling back to safe submit action.", flush=True)
+    return None
 
 
 def obs_to_text(obs: Any, step: int) -> str:
