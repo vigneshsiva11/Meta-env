@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Test script to verify task scores are strictly inside (0, 1) boundary.
-Does NOT require Gemini API key — tests grading logic directly.
+Does NOT require Gemini API key  tests grading logic directly.
 """
 import sys
 sys.path.insert(0, '.')
@@ -34,9 +34,9 @@ def test_open_interval_bounds():
     all_pass = True
     
     for task_id in ["TASK-01", "TASK-02", "TASK-03"]:
-        print(f"\n{'─' * 70}")
+        print(f"\n{'' * 70}")
         print(f"Task: {task_id}")
-        print(f"{'─' * 70}")
+        print(f"{'' * 70}")
         
         for test_name, actions in test_cases:
             env.reset(task_id=task_id, seed=42)
@@ -60,22 +60,22 @@ def test_open_interval_bounds():
                 
                 # Check bounds: must be strictly inside (0, 1)
                 if score <= 0.0 or score >= 1.0:
-                    print(f"    ❌ FAIL: Score {score:.4f} is NOT strictly inside (0, 1)")
+                    print(f"     FAIL: Score {score:.4f} is NOT strictly inside (0, 1)")
                     all_pass = False
                 elif not (0.0 < score < 1.0):
-                    print(f"    ❌ FAIL: Score boundary check failed")
+                    print(f"     FAIL: Score boundary check failed")
                     all_pass = False
                 else:
-                    print(f"    ✅ PASS: Score {score:.4f} is strictly inside (0, 1)")
+                    print(f"     PASS: Score {score:.4f} is strictly inside (0, 1)")
             else:
-                print(f"    ⚠️  WARNING: No observation returned")
+                print(f"      WARNING: No observation returned")
     
     print(f"\n{'=' * 70}")
     if all_pass:
-        print("✅ ALL TESTS PASSED - Task scores are safe for validator")
+        print(" ALL TESTS PASSED - Task scores are safe for validator")
         return 0
     else:
-        print("❌ SOME TESTS FAILED - Score bounds violated")
+        print(" SOME TESTS FAILED - Score bounds violated")
         return 1
 
 
@@ -108,12 +108,12 @@ def test_full_episode():
         
         # Validate
         if not (0.0 < score < 1.0):
-            print(f"  ❌ FAIL: Score {score:.4f} violates (0, 1) bounds")
+            print(f"   FAIL: Score {score:.4f} violates (0, 1) bounds")
             return 1
         else:
-            print(f"  ✅ PASS: Score is strictly inside (0, 1)")
+            print(f"   PASS: Score is strictly inside (0, 1)")
     
-    print(f"\n{'─' * 70}")
+    print(f"\n{'' * 70}")
     print(f"Summary:")
     for i, (task_id, score) in enumerate(zip(["TASK-01", "TASK-02", "TASK-03"], all_scores)):
         print(f"  {task_id}: {score:.4f}")
@@ -121,10 +121,10 @@ def test_full_episode():
     print(f"  Average: {avg:.4f}")
     
     if not (0.0 < avg < 1.0):
-        print(f"  ❌ FAIL: Average {avg:.4f} violates (0, 1) bounds")
+        print(f"   FAIL: Average {avg:.4f} violates (0, 1) bounds")
         return 1
     else:
-        print(f"  ✅ PASS: Average is strictly inside (0, 1)")
+        print(f"   PASS: Average is strictly inside (0, 1)")
     
     return 0
 
@@ -135,10 +135,10 @@ if __name__ == "__main__":
     
     print("\n" + "=" * 70)
     if result1 == 0 and result2 == 0:
-        print("✅✅✅ ALL VALIDATION TESTS PASSED ✅✅✅")
+        print(" ALL VALIDATION TESTS PASSED ")
         print("=" * 70)
         sys.exit(0)
     else:
-        print("❌ SOME VALIDATION TESTS FAILED")
+        print(" SOME VALIDATION TESTS FAILED")
         print("=" * 70)
         sys.exit(1)
