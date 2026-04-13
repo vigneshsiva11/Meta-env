@@ -166,7 +166,7 @@ and the task description. Respond ONLY with a single JSON object:
 Critical rules:
 - NEVER remove a field a consumer reads without first adding an alias.
 - When renaming a field any consumer depends on, ALWAYS set add_deprecation_header: true.
-- When backward_compat_score == 1.0 AND forward_compat_score == 1.0, issue action_type "submit".
+- When backward_compat_score >= 0.9999 AND forward_compat_score >= 0.9999, issue action_type "submit".
 - Do NOT output markdown fences or any text outside the JSON object.
 """
 
@@ -251,9 +251,9 @@ def call_llm(obs_text: str, task_description: str) -> Optional[Dict[str, Any]]:
 def obs_to_text(obs: Any, step: int) -> str:
     lines = [
         f"Step {step} | steps_remaining={obs.steps_remaining}",
-        f"backward_compat={obs.backward_compat_score:.2f}  "
-        f"forward_compat={obs.forward_compat_score:.2f}  "
-        f"no_redundancy={obs.no_redundancy_score:.2f}",
+        f"backward_compat={_display_open_score(obs.backward_compat_score):.4f}  "
+        f"forward_compat={_display_open_score(obs.forward_compat_score):.4f}  "
+        f"no_redundancy={_display_open_score(obs.no_redundancy_score):.4f}",
         "",
         "Current schema:",
     ]
@@ -268,7 +268,7 @@ def obs_to_text(obs: Any, step: int) -> str:
         lines.append(
             f"  [{cr['consumer']}] "
             f"{cr['tests_passed']}/{cr['tests_total']} passed  "
-            f"score={cr['score']:.2f}{brk}"
+            f"score={_display_open_score(cr['score']):.4f}{brk}"
         )
     if obs.hint:
         lines.append(f"\nHint: {obs.hint}")

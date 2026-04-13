@@ -555,7 +555,11 @@ class ApiContractEnvironment(Environment):
         excess = max(0, self._mutations - expected * 2)
         redundancy = max(0.0, 1.0 - excess * 0.10)
 
-        return backward, forward, redundancy
+        return (
+            self._clamp_open_score(backward),
+            self._clamp_open_score(forward),
+            self._clamp_open_score(redundancy),
+        )
 
     def _final_reward(self, bw: float, fw: float, nr: float) -> float:
         """
@@ -570,8 +574,7 @@ class ApiContractEnvironment(Environment):
         reward = max(self.REWARD_MIN, base - penalty)
         if self._task.get("bonus_deprecation_header") and self._deprecation_header_active:
             reward = min(self.REWARD_MAX, reward + 0.05)
-        reward = min(self.REWARD_MAX, reward)
-        return round(reward, 4)
+        return self._clamp_open_reward(reward)
 
     def _clamp_open_reward(self, reward: float) -> float:
         """Ensure rewards stay in the strict open interval required by validator."""
@@ -595,5 +598,5 @@ class ApiContractEnvironment(Environment):
         if nr < 0.7:
             parts.append("Too many mutations — try to minimise unnecessary changes.")
         if not parts:
-            parts.append("Looking good — consider submitting when both scores are 1.0.")
+            parts.append("Looking good — consider submitting when both scores reach 0.9999.")
         return " | ".join(parts)
