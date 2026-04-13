@@ -33,10 +33,10 @@ from typing import Any, Dict, List, Optional
 
 from openai import OpenAI
 
-# ── local imports ─────────────────────────────────────────────────────────────
+# -- local imports ---
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# ── required env vars ─────────────────────────────────────────────────────────
+# -- required env vars ---
 API_BASE_URL: str = os.environ.get("API_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/")
 MODEL_NAME:   str = os.environ.get("MODEL_NAME", "gemini-2.0-flash")
 HF_TOKEN:     str = os.environ["HF_TOKEN"]
@@ -52,7 +52,7 @@ try:
 except Exception:
     pass
 
-# ── Gemini via OpenAI-compat client ──────────────────────────────────────────
+# -- Gemini via OpenAI-compat client --
 llm = OpenAI(
     api_key=HF_TOKEN,
     base_url=API_BASE_URL,
@@ -85,7 +85,7 @@ def _display_open_score(score: float) -> float:
         return REWARD_MIN
 
 
-# ── Server startup ────────────────────────────────────────────────────────────
+# -- Server startup --
 
 def _is_port_open(port: int, timeout: float = 1.0) -> bool:
     try:
