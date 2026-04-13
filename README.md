@@ -5,7 +5,7 @@ colorTo: indigo
 sdk: docker
 ---
 
-# 🔌 API Contract Negotiator — OpenEnv Environment
+#  API Contract Negotiator — OpenEnv Environment
 
 **Meta × PyTorch × Hugging Face OpenEnv Hackathon — Round 1 Submission**
 
@@ -23,15 +23,15 @@ API backward-compatibility is one of the hardest problems in production systems:
 
 Each episode, the agent:
 
-1. 📥 **Observes** current schema, consumer test status, and partial scores
-2. 🎯 **Proposes** one mutation per step (add field, rename, alias, change type, mark deprecated, submit)
-3. ✅ **Validates** the mutation against all consumer test suites
-4. 📊 **Receives** scored feedback with backward-compat, forward-compat, and redundancy signals
-5. 🏁 **Submits** when satisfied, triggering final grading
+1.  **Observes** current schema, consumer test status, and partial scores
+2.  **Proposes** one mutation per step (add field, rename, alias, change type, mark deprecated, submit)
+3.  **Validates** the mutation against all consumer test suites
+4.  **Receives** scored feedback with backward-compat, forward-compat, and redundancy signals
+5.  **Submits** when satisfied, triggering final grading
 
 ---
 
-## 🚀 Quick Start (30 seconds)
+##  Quick Start (30 seconds)
 
 ```bash
 # Install dependencies
@@ -56,7 +56,7 @@ python inference.py
 
 ---
 
-## 🎯 The Three Tasks: Easy → Medium → Hard
+##  The Three Tasks: Easy → Medium → Hard
 
 | Task    | Difficulty | Scenario                                                                                                                                | Max steps |
 | ------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------- | --------- |
@@ -66,7 +66,7 @@ python inference.py
 
 ---
 
-## 🎮 Action Space (What the Agent Can Do)
+##  Action Space (What the Agent Can Do)
 
 The agent proposes one mutation per step:
 
@@ -79,7 +79,7 @@ ContractAction(
         "add_alias",       # 🔗 Add alias pointing to existing field
         "change_type",     # 🔄 Change a field's type (e.g., int → string)
         "mark_deprecated", # ⚠️  Soft-flag a field (soft removal, not hard)
-        "submit",          # ✅ Finalize and trigger full grading
+        "submit",          #  Finalize and trigger full grading
     ],
     target_field: str,                  # field to act on
     new_name:     Optional[str],        # for rename/alias actions
@@ -91,7 +91,7 @@ ContractAction(
 
 ---
 
-## 📊 What the Agent Observes
+##  What the Agent Observes
 
 After each action:
 
@@ -103,7 +103,7 @@ ContractObservation(
     backward_compat_score:   float,          # Can old consumers still work?
     forward_compat_score:    float,          # Can new consumers work?
     no_redundancy_score:     float,          # Clean schema (no dead fields)?
-    consumer_results:        List[Dict],     # ✅/❌ status per consumer
+    consumer_results:        List[Dict],     # /❌ status per consumer
     deprecation_header_present: bool,
     task_id:                 str,
     task_difficulty:         Literal["easy","medium","hard"],
@@ -126,7 +126,7 @@ ContractObservation(
 
 ---
 
-## 📈 Reward Design
+##  Reward Design
 
 **At every intermediate step:**
 
@@ -148,16 +148,16 @@ This design incentivizes **incremental progress** while maximizing **final quali
 
 ---
 
-## 📊 Baseline Performance
+##  Baseline Performance
 
 Tested with `gemini-flash-lite-latest` (Gemini API):
 
 | Task        | Difficulty | Score      | Steps        | Result                                       |
 | ----------- | ---------- | ---------- | ------------ | -------------------------------------------- |
-| TASK-01     | Easy       | 0.9999     | 2            | ✅ All consumers pass                        |
-| TASK-02     | Medium     | 0.9999     | 2            | ✅ Bonus achieved; deprecation header active |
-| TASK-03     | Hard       | 0.9999     | 6            | ✅ All 4 consumers merged successfully       |
-| **Average** | —          | **0.9999** | **10 total** | ✅ Robust across all difficulties            |
+| TASK-01     | Easy       | 0.9999     | 2            |  All consumers pass                        |
+| TASK-02     | Medium     | 0.9999     | 2            |  Bonus achieved; deprecation header active |
+| TASK-03     | Hard       | 0.9999     | 6            |  All 4 consumers merged successfully       |
+| **Average** | —          | **0.9999** | **10 total** |  Robust across all difficulties            |
 
 All runs use `seed=42` for reproducibility—identical scores on every submission.
 
@@ -186,7 +186,7 @@ All runs use `seed=42` for reproducibility—identical scores on every submissio
 
 ---
 
-## 🔬 Research Potential
+##  Research Potential
 
 This environment opens new RL research directions:
 
@@ -216,7 +216,7 @@ cd api_contract_env
 python inference.py
 ```
 
-Expected runtime: **40–50 seconds** ✅
+Expected runtime: **40–50 seconds** 
 
 ### Docker (Recommended for Production / HF Spaces)
 
@@ -248,15 +248,15 @@ openenv push
 
 ```
 api_contract_env/
-├── inference.py              # 🤖 Baseline agent using Gemini LLM
+├── inference.py              #  Baseline agent using Gemini LLM
 ├── models.py                 # 📦 Pydantic data contracts
-├── client.py                 # 🔌 Typed WebSocket client
-├── openenv.yaml              # ⚙️  Environment manifest
-├── pyproject.toml            # 📋 Python dependencies
+├── client.py                 #  Typed WebSocket client
+├── openenv.yaml              # ️  Environment manifest
+├── pyproject.toml            #  Python dependencies
 ├── README.md                 # 📖 Documentation
 │
 └── server/
-    ├── app.py                # 🚀 FastAPI HTTP/WebSocket server
+    ├── app.py                #  FastAPI HTTP/WebSocket server
     ├── environment.py        # 🌍 Core environment logic + 3 tasks
     ├── Dockerfile            # 🐳 Container image
     └── __init__.py
@@ -268,14 +268,14 @@ api_contract_env/
 
 | Variable       | Required    | Example                                                    | Purpose                               |
 | -------------- | ----------- | ---------------------------------------------------------- | ------------------------------------- |
-| `API_BASE_URL` | ✅ Yes      | `https://generativelanguage.googleapis.com/v1beta/openai/` | LLM API endpoint                      |
-| `MODEL_NAME`   | ✅ Yes      | `gemini-2.0-flash`                                         | Model identifier                      |
-| `HF_TOKEN`     | ✅ Yes      | `sk-…` (Gemini key) or `hf_…` (HF token)                   | API credentials                       |
+| `API_BASE_URL` |  Yes      | `https://generativelanguage.googleapis.com/v1beta/openai/` | LLM API endpoint                      |
+| `MODEL_NAME`   |  Yes      | `gemini-2.0-flash`                                         | Model identifier                      |
+| `HF_TOKEN`     |  Yes      | `sk-…` (Gemini key) or `hf_…` (HF token)                   | API credentials                       |
 | `ENV_BASE_URL` | ⚪ Optional | `http://localhost:8000`                                    | Server URL (auto-detected if not set) |
 
 ---
 
-## 📋 Sample Output
+##  Sample Output
 
 ```
 [START] task_id=TASK-01 difficulty=easy max_steps=6
