@@ -121,7 +121,7 @@ def start_server_background(port: int) -> None:
     raise RuntimeError(f"Environment server did not start within 30 seconds on port {port}.")
 
 
-# ── Structured log helpers ────────────────────────────────────────────────────
+# -- Structured log helpers --
 
 def log_start(task_id: str, difficulty: str, max_steps: int) -> None:
     print(f"[START] task_id={task_id} difficulty={difficulty} max_steps={max_steps}", flush=True)

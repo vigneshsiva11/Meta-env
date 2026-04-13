@@ -3,7 +3,7 @@ server/environment.py
 =====================
 API Contract Negotiator — Core Environment Logic
 
-Three real-world tasks (easy → medium → hard), deterministic consumer
+Three real-world tasks (easy -> medium -> hard), deterministic consumer
 test simulation, partial reward signals at every step, and all seven
 unique features baked in.
 
@@ -12,10 +12,10 @@ Unique features implemented here
 1. Structured episode logging hooks (called from inference.py)
 2. Seed-based reproducibility on reset()
 3. Consumer simulation with per-field hard-break detection
-4. Step-level hint system (hints off → proves pure RL learnability)
+4. Step-level hint system (hints off -> proves pure RL learnability)
 5. SUPPORTS_CONCURRENT_SESSIONS = True (4 parallel sessions)
 6. Deprecation-header bonus reward (Task-02)
-7. Force-termination on catastrophic failure (≥5 hard breaks)
+7. Force-termination on catastrophic failure (>=5 hard breaks)
 """
 from __future__ import annotations
 
@@ -52,13 +52,13 @@ def _f(
     }
 
 
-# ──────────────────────────────────────────────────────────────────────────────
+# ------------------------------------------------------------------------------
 # Task catalogue
-# ──────────────────────────────────────────────────────────────────────────────
+# ------------------------------------------------------------------------------
 
 TASKS: Dict[str, Dict[str, Any]] = {
 
-    # ── TASK-01 ─ Easy ────────────────────────────────────────────────────────
+    # -- TASK-01 - Easy --------------------------------------------------------
     # Add a missing "currency" field to the payments API.
     # Two consumers already in production must not break.
     "TASK-01": {
@@ -92,8 +92,8 @@ TASKS: Dict[str, Dict[str, Any]] = {
         "bonus_deprecation_header": False,
     },
 
-    # ── TASK-02 ─ Medium ──────────────────────────────────────────────────────
-    # Rename "user_name" → "username" (snake_case unification).
+    # -- TASK-02 - Medium ------------------------------------------------------
+    # Rename "user_name" -> "username" (snake_case unification).
     # Three legacy consumers read the OLD name — agent must add a
     # backward-compat alias. Bonus reward for emitting deprecation header.
     "TASK-02": {
@@ -138,7 +138,7 @@ TASKS: Dict[str, Dict[str, Any]] = {
         "bonus_deprecation_header": True,
     },
 
-    # ── TASK-03 ─ Hard ────────────────────────────────────────────────────────
+    # -- TASK-03 - Hard --------------------------------------------------------
     # Merge two conflicting API versions (v1 Team-A vs v2 Team-B)
     # into one unified schema that satisfies all four consumers.
     "TASK-03": {
@@ -201,9 +201,9 @@ TASKS: Dict[str, Dict[str, Any]] = {
 TASK_ORDER: List[str] = ["TASK-01", "TASK-02", "TASK-03"]
 
 
-# ──────────────────────────────────────────────────────────────────────────────
+# ------------------------------------------------------------------------------
 # Environment
-# ──────────────────────────────────────────────────────────────────────────────
+# ------------------------------------------------------------------------------
 
 class ApiContractEnvironment(Environment):
     """
@@ -236,7 +236,7 @@ class ApiContractEnvironment(Environment):
         self._submitted: bool = False
         self._deprecation_header_active: bool = False
 
-    # ── reset() ──────────────────────────────────────────────────────────────
+    # -- reset() --------------------------------------------------------------
 
     def reset(
         self,
@@ -285,7 +285,7 @@ class ApiContractEnvironment(Environment):
             hint=self._task["description"],          # full task description on reset
         )
 
-    # ── step() ───────────────────────────────────────────────────────────────
+    # -- step() ---------------------------------------------------------------
 
     def step(
         self,
@@ -364,7 +364,7 @@ class ApiContractEnvironment(Environment):
             hint=hint,
         )
 
-    # ── state property ───────────────────────────────────────────────────────
+    # -- state property -------------------------------------------------------
 
     @property
     def state(self) -> ContractState:
@@ -380,7 +380,7 @@ class ApiContractEnvironment(Environment):
             deprecation_header_active=self._deprecation_header_active,
         )
 
-    # ── Mutation engine ───────────────────────────────────────────────────────
+    # -- Mutation engine -------------------------------------------------------
 
     def _apply_mutation(
         self, action: ContractAction
@@ -427,7 +427,7 @@ class ApiContractEnvironment(Environment):
             if action.add_deprecation_header:
                 self._deprecation_header_active = True
             dep_note = " Deprecation header activated." if action.add_deprecation_header else ""
-            return True, f"Renamed '{old_name}' → '{action.new_name}' (alias kept: '{old_name}').{dep_note}", schema
+            return True, f"Renamed '{old_name}' -> '{action.new_name}' (alias kept: '{old_name}').{dep_note}", schema
 
         if at == "remove_field":
             if not find(tf):
@@ -448,7 +448,7 @@ class ApiContractEnvironment(Environment):
                 alias=tf,
                 description=f"Alias for '{tf}'",
             ))
-            return True, f"Added alias '{action.new_name}' → '{tf}'.", schema
+            return True, f"Added alias '{action.new_name}' -> '{tf}'.", schema
 
         if at == "change_type":
             if not action.new_type:
@@ -458,7 +458,7 @@ class ApiContractEnvironment(Environment):
                 return False, f"Field '{tf}' not found.", schema
             old_t = target.get("type", "str")
             target["type"] = action.new_type
-            return True, f"Changed type of '{tf}': {old_t} → {action.new_type}.", schema
+            return True, f"Changed type of '{tf}': {old_t} -> {action.new_type}.", schema
 
         if at == "mark_deprecated":
             target = find(tf)
@@ -472,7 +472,7 @@ class ApiContractEnvironment(Environment):
 
         return False, f"Unknown action_type '{at}'.", schema
 
-    # ── Consumer test simulator ───────────────────────────────────────────────
+    # -- Consumer test simulator -----------------------------------------------
 
     def _run_consumer_tests(self) -> List[Dict[str, Any]]:
         """
@@ -519,7 +519,7 @@ class ApiContractEnvironment(Environment):
 
         return results
 
-    # ── Scoring ───────────────────────────────────────────────────────────────
+    # -- Scoring ---------------------------------------------------------------
 
     def _compute_scores(
         self, consumer_results: List[Dict[str, Any]]

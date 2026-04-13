@@ -40,11 +40,11 @@ class ApiContractEnv(EnvClient[ContractAction, ContractObservation, ContractStat
         return min(0.9999, max(0.0001, float(value)))
 
     def _step_payload(self, action: ContractAction) -> Dict[str, Any]:
-        """Serialise action → dict for WebSocket transport."""
+        """Serialize action -> dict for WebSocket transport."""
         return action.model_dump(exclude_none=False)
 
     def _parse_result(self, payload: Dict[str, Any]) -> StepResult[ContractObservation]:
-        """Deserialise WebSocket response → StepResult[ContractObservation]."""
+        """Deserialize WebSocket response -> StepResult[ContractObservation]."""
         obs_data: Dict[str, Any] = payload.get("observation", payload)
         obs = ContractObservation(**obs_data)
         return StepResult(
@@ -54,7 +54,7 @@ class ApiContractEnv(EnvClient[ContractAction, ContractObservation, ContractStat
         )
 
     def _parse_state(self, payload: Dict[str, Any]) -> ContractState:
-        """Deserialise state response → ContractState."""
+        """Deserialize state response -> ContractState."""
         return ContractState(
             episode_id=payload.get("episode_id"),
             step_count=int(payload.get("step_count", 0)),
